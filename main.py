@@ -128,3 +128,31 @@ def get_history():
         }
         for r in records
     ]
+
+from fastapi.responses import JSONResponse
+
+# 특성 중요도 API
+@app.get("/feature-importance")
+def get_feature_importance():
+    try:
+        # 모델이 feature_importances_ 속성을 가지고 있는지 확인
+        if not hasattr(model, "feature_importances_"):
+            raise AttributeError("모델에 feature_importances_ 속성이 없습니다")
+
+        importances = model.feature_importances_
+
+        importance_list = []
+        for i, (name, score) in enumerate(
+            sorted(zip(columns, importances), key=lambda x: x[1], reverse=True), start=1
+        ):
+            importance_list.append({
+                "feature_name": name,
+                "importance": round(float(score), 4),
+                "rank": i
+            })
+
+        return JSONResponse(content=importance_list)
+
+    except Exception as e:
+        logger.error(f"❌ 특성 중요도 로딩 실패: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
